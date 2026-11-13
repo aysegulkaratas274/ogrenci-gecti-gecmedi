@@ -94,6 +94,7 @@ def grafikler_sekmesi(df):
                 palette=["#55A868", "#C44E52"], legend=False, ax=ax)
     for i, v in enumerate(sayilar.values):
         ax.text(i, v + 10, str(v), ha="center")
+    ax.set_xlabel("")
     ax.set_ylabel("Öğrenci sayısı")
     st.pyplot(fig)
     st.info("715 öğrenci geçti (%71.5), 285 öğrenci kaldı (%28.5). Sınıflar tam dengeli değil; "

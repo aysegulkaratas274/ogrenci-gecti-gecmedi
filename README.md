@@ -1,30 +1,35 @@
-# 🎓 Öğrenci Geçer mi? — Proje Rehberi
+# 🎓 Öğrenci Geçer mi? — Sınav Başarısı Tahmini
 
-Bu dosya, proje klasöründe hangi dosyanın ne işe yaradığını ve içinde neler olduğunu sade bir dille anlatır.
+Öğrencinin arka plan bilgilerine (cinsiyet, ailenin gelir durumu, ebeveyn eğitimi, hazırlık kursu, etnik grup) bakarak **sınavı geçip geçmeyeceğini** tahmin eden bir makine öğrenmesi projesi.
+
+![Uygulama — Tahmin ekranı](images/app_tahmin.png)
 
 ---
 
-## Proje ne yapıyor?
+## 📌 Proje ne yapıyor?
 
-Bir öğrencinin **sınavı geçip geçmeyeceğini** tahmin eden bir model kurduk.
+Bu proje bir **ikili sınıflandırma** problemidir: Model her öğrenci için iki sonuçtan birini tahmin eder: **geçti (evet)** veya **kaldı (hayır)**.
 
-- **Veri seti:** Kaggle'daki *Students Performance in Exams* (1000 öğrenci)
-- **"Geçti" ne demek?** Veri setinde hazır bir geçti/kaldı bilgisi yok. Öğrencinin matematik, okuma ve yazma notlarının **ortalaması 60 veya üzerindeyse "geçti"**, altındaysa "kaldı" kabul ettik. (Neden 60 seçildiği aşağıda anlatılıyor.)
-- **Model neye bakarak tahmin ediyor?** Sınav notlarına değil, öğrencinin şu 5 bilgisine bakıyor:
+### Veri seti
 
-| Bilgi | Ne anlama geliyor? |
+Kaggle'daki **[Students Performance in Exams](https://www.kaggle.com/datasets/spscientist/students-performance-in-exams)** veri seti kullanıldı: 1000 öğrenci, 8 sütun.
+
+| Sütun | Açıklama |
 |---|---|
-| Cinsiyet | Kız / Erkek |
-| Etnik grup | Grup A, B, C, D, E (gerçek isimleri gizlenmiş) |
-| Ebeveynin eğitim düzeyi | Öğrencinin **anne/babasının** okul durumu (öğrencinin kendisinin değil) |
-| Öğle yemeği | Standart (ücretli) veya ücretsiz/indirimli. ABD'de ücretsiz yemek düşük gelirli ailelere verilir, yani bu bilgi aslında **ailenin gelir durumunu** gösterir |
-| Hazırlık kursu | Öğrenci sınava hazırlık kursunu tamamladı mı, almadı mı |
+| `gender` | Cinsiyet (kız / erkek) |
+| `race/ethnicity` | Etnik grup (Grup A–E, gerçek isimleri gizlenmiş) |
+| `parental level of education` | Öğrencinin **anne/babasının** eğitim düzeyi (öğrencinin kendisinin değil) |
+| `lunch` | Öğle yemeği: standart (ücretli) veya ücretsiz/indirimli. ABD'de ücretsiz okul yemeği düşük gelirli ailelere verilir; bu sütun **ailenin gelir durumunu** gösterir |
+| `test preparation course` | Sınava hazırlık kursunu tamamladı mı |
+| `math score`, `reading score`, `writing score` | Matematik, okuma ve yazma notları (0–100) |
 
-> **Neden sınav notlarını kullanmadık?** Çünkü "geçti/kaldı" bilgisini zaten bu notlardan hesapladık. Notları modele verseydik model cevabı önceden görmüş olurdu. Buna **veri sızıntısı** denir.
+### "Geçti" nasıl belirlendi?
 
-### Geçme notu neden 60?
+Veri setinde hazır bir geçti/kaldı bilgisi yok. Bu yüzden üç dersin ortalamasından hesaplandı:
 
-Veri setinde resmi bir geçme notu yok; bu eşiği biz seçtik. Veri **ABD okul sistemine** göre hazırlanmış ve ABD'de yaygın not sisteminde 60'ın altı **F**, yani "kaldı" demektir. Bu yüzden verinin geldiği sistemdeki geçme sınırını, yani 60'ı kullandık:
+> **Ortalama ≥ 60 → geçti**, **ortalama < 60 → kaldı**
+
+**Neden 60?** Veri ABD okul sistemine göre hazırlanmıştır. ABD'de yaygın not sisteminde 60'ın altı **F**, yani "kaldı" anlamına gelir:
 
 | Not | Harf | Anlamı |
 |---|---|---|
@@ -34,154 +39,218 @@ Veri setinde resmi bir geçme notu yok; bu eşiği biz seçtik. Veri **ABD okul 
 | 60–69 | D | Geçti (en düşük geçer not) |
 | **0–59** | **F** | **Kaldı** |
 
-> **Hoca sorarsa kısa cevap:** *"Veri ABD sistemine göre hazırlanmış, orada 60'ın altı F yani kaldı."*
+### Model neye bakarak tahmin ediyor?
+
+Model sınav notlarını **görmez**; sadece 5 arka plan bilgisine bakar: cinsiyet, etnik grup, ebeveyn eğitimi, öğle yemeği türü ve hazırlık kursu.
+
+Sınav notları modele verilmedi, çünkü "geçti/kaldı" bilgisi zaten bu notlardan hesaplandı. Notlar modele verilseydi model cevabı önceden görmüş olurdu (**veri sızıntısı / data leakage**).
+
+### Projenin adımları
+
+1. **Veriyi tanıma:** Sütunların incelenmesi, sınıf dağılımı (kaç geçti, kaç kaldı)
+2. **Veri temizleme:** Eksik değer ve tekrar eden satır kontrolü, gereksiz sütunların çıkarılması, kategorik verilerin sayıya çevrilmesi (one-hot encoding)
+3. **Görselleştirme:** Her özelliğin geçme oranına etkisini gösteren 6 grafik ve yorumları
+4. **Model:** %80 eğitim (train) / %20 test ayrımı; Logistic Regression, Decision Tree ve Random Forest
+5. **Değerlendirme:** Accuracy, precision, recall, confusion matrix; modelin yanlış tahmin ettiği örneklerin incelenmesi
 
 ---
 
-## 📁 Klasörde neler var?
+## 📁 Proje yapısı
 
 ```
-yztproje1/
-├── ogrenci_gecme_tahmini.ipynb   → Ödevin kendisi (rapor)
-├── app.py                        → Streamlit uygulaması (bonus)
+ogrenci-gecti-gecmedi/
+├── ogrenci_gecme_tahmini.ipynb   → Analizin tamamı: kod, grafikler, sonuçlar ve yorumlar
+├── app.py                        → Streamlit arayüzü
 ├── data/
 │   └── StudentsPerformance.csv   → Veri seti
-├── requirements.txt              → Gerekli kütüphanelerin listesi
-└── README.md                     → Bu dosya
+├── images/                       → README'deki grafikler ve ekran görüntüleri
+├── requirements.txt              → Gerekli Python kütüphaneleri
+└── README.md
 ```
-
----
-
-## 📓 `ogrenci_gecme_tahmini.ipynb` — Ödevin kendisi
-
-**Hocanın okuyacağı dosya bu.** İçinde kod, çıktılar (tablolar, grafikler) ve Türkçe açıklamalar adım adım yer alıyor. Çıktılar dosyaya kayıtlı, yani açar açmaz her şey görünür; yeniden çalıştırmaya gerek yok.
-
-**Nasıl açılır?** VS Code ile açabilirsin.
-
-### İçindeki bölümler
-
-**1. Veriyi Tanıma**
-- Verinin ilk birkaç satırı
-- Her sütunun ne anlama geldiğini anlatan tablo
-- Geçme notunun neden 60 seçildiği (ABD not sistemi)
-- Kaç öğrenci geçmiş, kaç öğrenci kalmış: **715 geçti (%71.5), 285 kaldı (%28.5)**
-- Sınıflar dengeli mi? **Tam dengeli değil**; geçenler yaklaşık 2.5 kat fazla.
-
-**2. Veri Temizleme**
-- Eksik veri var mı? **Yok.** Tekrar eden satır var mı? **Yok.**
-- Sınav notu sütunları modelden çıkarıldı (veri sızıntısını önlemek için).
-- Yazıyla tutulan bilgiler (ör. "female", "male") modelin anlayacağı 0/1 sayılarına çevrildi (*one-hot encoding*).
-
-**3. Görselleştirme — 6 grafik, her birinin altında yorum**
-
-| # | Grafik | Ne gösteriyor? |
-|---|---|---|
-| 1 | Geçen / kalan sayısı | 715 geçti, 285 kaldı |
-| 2 | Cinsiyete göre geçme oranı | Kızlar %76, erkekler %67 |
-| 3 | Öğle yemeğine göre geçme oranı | Standart yemek %80, ücretsiz/indirimli %56 (**en büyük fark**) |
-| 4 | Hazırlık kursuna göre geçme oranı | Kursu tamamlayan %83, almayan %65 |
-| 5 | Ebeveyn eğitimine göre geçme oranı | Anne/babanın eğitimi arttıkça geçme oranı artıyor |
-| 6 | Etnik gruba göre geçme oranı | Grup A %55, Grup E %83 |
-
-**4. Model**
-- Verinin **%80'i** modeli eğitmek (train), **%20'si** modeli test etmek için ayrıldı.
-- İki model kuruldu: **Logistic Regression** ve **Decision Tree**.
-
-**5. Sonuç**
-- Accuracy, precision ve recall tabloları
-- Confusion matrix (hangi öğrenciler doğru, hangileri yanlış tahmin edildi)
-- Hangi bilginin geçme şansını ne kadar etkilediği ("kaç kat artırır/azaltır" tablosu)
-- **"Yanlış evet mi daha kötü, yanlış hayır mı?"** sorusunun cevabı
-
-**6. Bonus**
-- **6.1:** Üçüncü model olarak Random Forest eklendi; üç model karşılaştırıldı.
-- **6.2:** Modelin yanıldığı birkaç öğrenci incelendi ve neden yanıldığı yorumlandı.
-
-**Genel Sonuç** ve **Verinin sınırları** notu (veri seti yapay olarak üretilmiştir)
-
----
-
-## 🖥️ `app.py` — Streamlit uygulaması (bonus)
-
-Bu dosya bir rapor değil, **tarayıcıda açılan bir uygulama**. Projeyi sunarken canlı göstermek için ideal.
-
-### Nasıl çalıştırılır?
-
-Proje klasöründe bir terminal açıp şunu yaz:
-
-```
-streamlit run app.py
-```
-
-Tarayıcıda uygulama açılır. Kapatmak için terminalde **Ctrl + C**'ye bas.
-
-> Hata alırsan şunu dene: `python -m streamlit run app.py`
-> Uygulama veriyi `data` klasöründen okuduğu için komutu **proje klasöründeyken** çalıştırmalısın.
-
-### Uygulamanın sekmeleri
-
-| Sekme | İçinde ne var? |
-|---|---|
-| 📊 **Grafikler** | Notebook'taki 6 grafik ve kısa yorumları |
-| 📈 **Model Sonuçları** | Üç modelin karşılaştırma tablosu (en iyi değerler yeşil). Seçtiğin modelin confusion matrix'i |
-| 🎓 **Tahmin Et** | Bir öğrencinin bilgilerini seçip **Tahmin et**'e basıyorsun. Uygulama **GEÇER / KALIR** sonucunu, geçme olasılığını ve sonucu hangi bilgilerin olumlu ya da olumsuz etkilediğini gösteriyor |
-
----
-
-## 📌 Notebook ile uygulama arasındaki fark
 
 | | Notebook (`.ipynb`) | Uygulama (`app.py`) |
 |---|---|---|
-| Ne işe yarar? | Okunan, değerlendirilen **rapor** | Kullanılan, denenen **uygulama** |
-| Veri temizleme adımları | ✅ Var | ❌ Yok |
-| 6 grafik ve yorumları | ✅ Var (detaylı yorum) | ✅ Var (kısa yorum) |
-| Model sonuçları ve confusion matrix | ✅ Var | ✅ Var |
-| "Kaç kat" katsayı analizi | ✅ Var | ❌ Yok |
-| Yanlış tahmin incelemesi | ✅ Var | ❌ Yok |
-| Kendi seçtiğin öğrenci için tahmin | ❌ Yok | ✅ Var |
+| Ne işe yarar? | Analizin adım adım anlatıldığı **rapor** | Tarayıcıda çalışan **etkileşimli uygulama** |
+| Veri tanıma ve temizleme | ✅ | ❌ |
+| 6 grafik ve yorumları | ✅ Detaylı yorum | ✅ Kısa yorum |
+| Model sonuçları ve confusion matrix | ✅ | ✅ |
+| Katsayı analizi ve hata analizi | ✅ | ❌ |
+| Seçilen bir öğrenci için tahmin | ❌ | ✅ |
 
-İkisi de modeli **aynı veri ve aynı ayarlarla** eğitiyor; bu yüzden sonuçları birebir aynı.
+İkisi de modeli aynı veri ve aynı ayarlarla eğitir; sonuçları birebir aynıdır.
 
 ---
 
-## 🏆 Ana sonuçlar (kısaca)
+## ▶️ Nasıl çalıştırılır?
 
-| Model | Accuracy | Kalacak öğrencileri yakalama |
+### 1. Projeyi indir
+
+```bash
+git clone https://github.com/aysegulkaratas274/ogrenci-gecti-gecmedi.git
+cd ogrenci-gecti-gecmedi
+```
+
+### 2. Gerekli kütüphaneleri kur
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Notebook'u aç
+
+`ogrenci_gecme_tahmini.ipynb` dosyasını **VS Code** veya **Jupyter** ile aç. Çıktılar dosyaya kayıtlı olduğu için yeniden çalıştırmadan da tüm tablolar ve grafikler görünür. Ayrıca GitHub'da dosyaya tıklayarak tarayıcıda da görüntüleyebilirsin.
+
+Notebook'u baştan çalıştırmak istersen: Jupyter'da **Run All** (VS Code'da **Run All**) seçeneğini kullan.
+
+### 4. Streamlit uygulamasını başlat
+
+```bash
+streamlit run app.py
+```
+
+Tarayıcıda `http://localhost:8501` adresinde uygulama açılır. Kapatmak için terminalde **Ctrl + C**'ye bas.
+
+> **Not:** Komutu proje klasöründeyken çalıştır; uygulama veriyi `data/` klasöründen okur.
+> `streamlit` komutu bulunamazsa: `python -m streamlit run app.py`
+
+---
+
+## 📊 Sonuçlar
+
+### Sınıf dağılımı
+
+1000 öğrenciden **715'i geçti (%71.5)**, **285'i kaldı (%28.5)**. Sınıflar tam dengeli değil; geçenler yaklaşık 2.5 kat fazla.
+
+![Sınıf dağılımı](images/01_sinif_dagilimi.png)
+
+### Hangi özellikler geçmeyi etkiliyor?
+
+| Özellik | Geçme oranı |
+|---|---|
+| **Öğle yemeği** | Standart (ücretli) **%79.8** — Ücretsiz/indirimli **%56.3** |
+| **Hazırlık kursu** | Tamamladı **%83.2** — Almadı **%65.0** |
+| **Ebeveyn eğitimi** | Lise ve altı **%61–64** — Lisans / yüksek lisans **%82–83** |
+| **Cinsiyet** | Kız **%76.1** — Erkek **%66.6** |
+| **Etnik grup** | Grup A **%55.1** — Grup E **%82.9** |
+
+En büyük farkı yaratan iki özellik **öğle yemeği türü (ailenin gelir durumu)** ve **hazırlık kursu**.
+
+<p>
+  <img src="images/03_ogle_yemegi.png" width="49%" alt="Öğle yemeğine göre geçme oranı">
+  <img src="images/04_hazirlik_kursu.png" width="49%" alt="Hazırlık kursuna göre geçme oranı">
+</p>
+<p>
+  <img src="images/02_cinsiyet.png" width="49%" alt="Cinsiyete göre geçme oranı">
+  <img src="images/06_etnik_grup.png" width="49%" alt="Etnik gruba göre geçme oranı">
+</p>
+
+![Ebeveyn eğitimine göre geçme oranı](images/05_ebeveyn_egitimi.png)
+
+### Model sonuçları
+
+Modeller, daha önce görmedikleri **200 öğrencilik test kümesinde** (143 geçen, 57 kalan) değerlendirildi.
+
+| Model | Accuracy | Precision (geçti) | Recall (geçti) | Recall (kaldı) |
+|---|---|---|---|---|
+| **Logistic Regression** ⭐ | **0.630** | **0.795** | 0.650 | **0.579** |
+| Decision Tree | 0.580 | 0.776 | 0.580 | **0.579** |
+| Random Forest | 0.615 | 0.762 | **0.671** | 0.474 |
+
+**En iyi model: Logistic Regression.** Accuracy'si en yüksek olan ve kalacak öğrencileri en iyi yakalayan model. Kalacak 57 öğrenciden 33'ünü doğru tespit ediyor.
+
+![Model karşılaştırması](images/09_model_karsilastirma.png)
+
+### Confusion matrix
+
+![Confusion matrix](images/07_confusion_matrix.png)
+
+| Logistic Regression | Tahmin: Kalır | Tahmin: Geçer |
 |---|---|---|
-| **Logistic Regression (en iyi)** | **%63** | **57 öğrenciden 33'ü (%58)** |
-| Decision Tree | %58 | 57 öğrenciden 33'ü (%58) |
-| Random Forest | %61.5 | 57 öğrenciden 27'si (%47) |
+| **Gerçek: Kaldı** | 33 (doğru) | 24 (yanlış "evet") |
+| **Gerçek: Geçti** | 50 (yanlış "hayır") | 93 (doğru) |
 
-- **Geçmeyi en çok etkileyen iki şey:** öğle yemeği türü (ailenin gelir durumu) ve hazırlık kursu.
-- **Yanlış "evet" daha kötü:** Kalacak bir öğrenciye "geçer" denirse o öğrenci gözden kaçar ve yardım alamaz. Yanlış "hayır"da ise geçecek bir öğrenci gereksiz yere ek desteğe yönlendirilir; bu da ona zarar vermez. Bu yüzden model, kalacak öğrencileri yakalamaya öncelik verecek şekilde ayarlandı.
+### Yanlış "evet" mi daha kötü, yanlış "hayır" mı?
+
+- **Yanlış "evet":** Gerçekte kalacak bir öğrenciye model "geçer" der.
+- **Yanlış "hayır":** Gerçekte geçecek bir öğrenciye model "kalır" der.
+
+**Bu problemde yanlış "evet" daha kötüdür.** Böyle bir model, risk altındaki öğrencileri erken tespit edip destek (etüt, hazırlık kursu) sağlamak için kullanılır. Yanlış "evet" olduğunda yardıma ihtiyacı olan öğrenci gözden kaçar ve sınavda kalır. Yanlış "hayır" olduğunda ise geçecek bir öğrenci gereksiz yere ek desteğe yönlendirilir; bu öğrenciye zarar vermez.
+
+Bu yüzden modeller `class_weight="balanced"` ayarıyla, kalacak öğrencileri yakalamaya öncelik verecek şekilde eğitildi:
+
+| Logistic Regression | Accuracy | Kalanları yakalama |
+|---|---|---|
+| Ayar olmadan | 0.68 | 57 öğrenciden **12'si** |
+| `class_weight="balanced"` | 0.63 | 57 öğrenciden **33'ü** |
+
+Accuracy'den 5 puan feda edilerek yakalanan riskli öğrenci sayısı 12'den 33'e çıkarıldı.
+
+### Hangi özellik geçme şansını ne kadar etkiliyor?
+
+Logistic Regression katsayıları (yeşil: şansı artırır, kırmızı: şansı azaltır):
+
+![Logistic Regression katsayıları](images/08_katsayilar.png)
+
+- **Standart öğle yemeği:** Ücretsiz/indirimli yemeğe göre geçme şansı (odds) yaklaşık **3.7 kat** fazla.
+- **Hazırlık kursu almamak:** Kursu alana göre geçme şansı yaklaşık **%74 daha düşük**.
+- **Ebeveynin lisans / yüksek lisans mezunu olması:** Önlisans mezunu ebeveyne göre şans **2 katın üzerinde**.
+- **Erkek olmak:** Kız öğrenciye göre geçme şansı yaklaşık **%38 daha düşük**.
+
+### Model neden yanılıyor?
+
+Notebook'un 6.2 bölümünde modelin en emin olduğu halde yanıldığı öğrenciler incelendi. Yanlış tahmin edilen öğrenciler, profilinin tersine sonuç alan öğrenciler: Örneğin bütün olumsuz özellikleri taşıdığı için model %9 geçme olasılığı verdiği halde 78 ortalamayla geçen bir öğrenci var. Model sadece arka plan bilgisini gördüğü için öğrencinin ne kadar çalıştığını bilemez; bilgileri birebir aynı olan iki öğrenciye aynı tahmini verir.
 
 ---
 
-## ❓ Hocanın sorabileceği sorular
+## 🖥️ Ekran görüntüleri
 
-**"Geçme notunu neden 60 aldınız?"**
-→ Veri ABD sistemine göre hazırlanmış; orada 60'ın altı F, yani kaldı. (Notebook Bölüm 1)
+Streamlit uygulaması üç sekmeden oluşur.
 
-**"Herkese 'geçer' diyen bir model bile %71.5 accuracy alır. Sizinki neden %63?"**
-→ O model kalacak öğrencilerin **hiçbirini** bulamaz. Bizim model 57 riskli öğrencinin 33'ünü buluyor. Bu problemde amaç riskli öğrenciyi bulmak olduğu için accuracy'den biraz feda ettik. (Notebook Bölüm 5.1 ve 5.4)
+### 📊 Grafikler
 
-**"Neden sınav notlarını kullanmadınız?"**
-→ "Geçti/kaldı" bilgisi zaten bu notlardan hesaplandı. Notları kullansaydık model cevabı önceden görmüş olurdu (veri sızıntısı). (Notebook Bölüm 2.2)
+Notebook'taki 6 grafik ve kısa yorumları.
 
-**"Accuracy neden daha yüksek değil?"**
-→ Model öğrencinin ne kadar çalıştığını, devamsızlığını, önceki notlarını bilmiyor; sadece arka plan bilgilerine bakıyor. Aynı arka plana sahip iki öğrenciden biri geçip diğeri kalabiliyor. (Notebook Bölüm 6.2)
+![Uygulama — Grafikler](images/app_grafikler.png)
 
-**"Bu sonuçlar gerçek öğrenciler için geçerli mi?"**
-→ Hayır. Veri seti eğitim amaçlı **yapay olarak üretilmiş**. Bu çalışma, bir sınıflandırma probleminin baştan sona nasıl kurulduğunu göstermek için yapıldı. (Notebook, Genel Sonuç)
+### 📈 Model Sonuçları
+
+Üç modelin karşılaştırma tablosu (en iyi değerler yeşil) ve seçilen modelin confusion matrix'i.
+
+![Uygulama — Model Sonuçları](images/app_model_sonuclari.png)
+
+### 🎓 Tahmin Et
+
+Öğrencinin bilgileri seçilir; uygulama **GEÇER / KALIR** sonucunu, geçme olasılığını ve sonucu hangi bilgilerin olumlu ya da olumsuz etkilediğini gösterir.
+
+![Uygulama — Tahmin Et](images/app_tahmin.png)
+
+---
+
+## ❓ Sık sorulan sorular
+
+**Herkese "geçer" diyen bir model bile %71.5 accuracy alır. Bu model neden %63?**
+O model kalacak öğrencilerin hiçbirini bulamaz. Bu model ise 57 riskli öğrenciden 33'ünü buluyor. Amaç riskli öğrenciyi bulmak olduğu için accuracy'den bir miktar feda edildi.
+
+**Accuracy neden daha yüksek değil?**
+Model öğrencinin çalışma süresini, devamsızlığını, önceki notlarını bilmiyor; sadece 5 arka plan bilgisine bakıyor. Aynı arka plana sahip iki öğrenciden biri geçip diğeri kalabiliyor. Daha iyi bir tahmin için bu tür ek bilgilere ihtiyaç var.
+
+**Neden en karmaşık model (Random Forest) en iyi sonucu vermedi?**
+Elimizde sadece 5 kategorik özellik var ve etkileri büyük ölçüde toplanabilir (kurs + yemek + ebeveyn eğitimi...). Bu tür basit bir ilişkiyi doğrusal bir model olan Logistic Regression daha iyi yakalıyor.
+
+---
+
+## ⚠️ Verinin sınırları
+
+Bu veri seti gerçek öğrencilerden toplanmamıştır. Royce Kimmons'ın veri bilimi öğrencileri için hazırladığı bir veri üreticisiyle **yapay (kurgusal) olarak oluşturulmuştur** ([roycekimmons.com/tools/generated_data/exams](http://roycekimmons.com/tools/generated_data/exams)). Bu nedenle sonuçlar gerçek öğrenciler için genellenemez. Proje, bir sınıflandırma probleminin baştan sona nasıl kurulduğunu göstermek amacıyla yapılmıştır.
 
 ---
 
 ## 🛠️ Kullanılan kütüphaneler
 
-| Kütüphane | Ne için kullanıldı? |
+| Kütüphane | Kullanım amacı |
 |---|---|
-| **pandas** | Veriyi okumak, tablo işlemleri |
+| **pandas** | Veriyi okuma ve tablo işlemleri |
 | **numpy** | Sayısal hesaplamalar |
 | **matplotlib / seaborn** | Grafikler |
 | **scikit-learn** | Modeller (Logistic Regression, Decision Tree, Random Forest) ve başarı ölçümleri |
-| **streamlit** | Tarayıcıda çalışan uygulama |
+| **streamlit** | Tarayıcıda çalışan arayüz |
